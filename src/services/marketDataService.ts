@@ -23,12 +23,12 @@ export const fetchKrakenTicker = async (ticker: string) => {
   return api.get<TKrakenTickerResponse>(url);
 };
 
-export const fetchHuobiTicker = async (ticker: string) => {
-  const url = `${HUOBI_API_URL}/market/detail/merged?symbol=${ticker}`;
-  return api.get<THuobiTickerResponse>(url);
-};
-
 export const fetchBitfinexTicker = async (ticker: string) => {
   const url = `${BITFINEX_API_URL}/v2/ticker/t${ticker}`;
   return api.get<TBitfinexTickerResponse>(url);
+};
+
+export const fetchHuobiTicker = async (ticker: string) => {
+  const url = `${HUOBI_API_URL}/market/detail/merged?symbol=${ticker}`;
+  return api.get<THuobiTickerResponse>(url);
 };

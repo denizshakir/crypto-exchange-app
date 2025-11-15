@@ -11,29 +11,29 @@ export default defineConfig({
     open: true,
     cors: true,
     proxy: {
-      '/binance': {
+      '/api/binance': {
         target: 'https://api.binance.com',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/binance/, ''),
+        rewrite: (path) => path.replace(/^\/api\/binance/, ''),
       },
-      '/kraken': {
+      '/api/kraken': {
         target: 'https://api.kraken.com',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/kraken/, ''),
+        rewrite: (path) => path.replace(/^\/api\/kraken/, ''),
       },
-      '/huobi': {
+      '/api/huobi': {
         target: 'https://api.huobi.pro',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/huobi/, ''),
+        rewrite: (path) => path.replace(/^\/api\/huobi/, ''),
       },
-      '/bitfinex': {
+      '/api/bitfinex': {
         target: 'https://api-pub.bitfinex.com',
         changeOrigin: true,
         secure: false,
-        rewrite: (path) => path.replace(/^\/bitfinex/, ''),
+        rewrite: (path) => path.replace(/^\/api\/bitfinex/, ''),
       },
     },
   },
