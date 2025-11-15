@@ -1,6 +1,15 @@
-import fetch from 'node-fetch';
-
 export default async function handler(req, res) {
+  // -------------------------
+  // CORS HEADERS
+  // -------------------------
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   try {
     const { path } = req.query;
     const query = { ...req.query };
@@ -13,8 +22,8 @@ export default async function handler(req, res) {
     const endpoint = `https://api-pub.bitfinex.com/${path.join('/')}`;
 
     const url =
-      query && Object.keys(query).length > 0
-        ? `${endpoint}?${new URLSearchParams(query).toString()}`
+      Object.keys(query).length > 0
+        ? `${endpoint}?${new URLSearchParams(query)}`
         : endpoint;
 
     const response = await fetch(url);
@@ -25,9 +34,9 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    res.status(200).json(data);
+    return res.status(200).json(data);
   } catch (err) {
     console.error('Bitfinex proxy error:', err);
-    res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error' });
   }
 }
