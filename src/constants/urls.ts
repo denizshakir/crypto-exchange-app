@@ -6,7 +6,5 @@ export const BINANCE_API_URL = isDevENv
 export const KRAKEN_API_URL = isDevENv
   ? '/api/kraken'
   : 'https://api.kraken.com';
-export const BITFINEX_API_URL = isDevENv
-  ? '/api/bitfinex'
-  : 'https://api-pub.bitfinex.com';
+export const BITFINEX_API_URL = '/api/bitfinex';
 export const HUOBI_API_URL = isDevENv ? '/api/huobi' : 'https://api.huobi.pro';
