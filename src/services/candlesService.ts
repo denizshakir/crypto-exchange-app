@@ -40,7 +40,7 @@ export const fetchBitfinexCandles = async ({
   symbolId: string;
 }) => {
   const candle = `trade:${INTERVAL}m:t${symbolId}/hist`;
-  const url = `/api/bitfinex/v2/candles/${candle}`;
+  const url = `${BITFINEX_API_URL}/v2/candles/${candle}`;
   return api.get<TBitfinexCandlesResponse>(url);
 };
 
