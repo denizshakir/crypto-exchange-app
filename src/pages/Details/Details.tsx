@@ -17,8 +17,8 @@ import {
 
 const EXCHANGES: EExchange[] = [
   EExchange.BINANCE,
-  EExchange.BITFINEX,
   EExchange.KRAKEN,
+  EExchange.BITFINEX,
   EExchange.HUOBI,
 ];
 

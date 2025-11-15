@@ -6,23 +6,29 @@ import {
   THuobiTickerResponse,
   TKrakenTickerResponse,
 } from '@/types/marketData';
-
-export const fetchKrakenTicker = async (ticker: string) => {
-  const url = `kraken/0/public/Ticker?pair=${ticker}`;
-  return api.get<TKrakenTickerResponse>(url);
-};
+import {
+  BINANCE_API_URL,
+  BITFINEX_API_URL,
+  HUOBI_API_URL,
+  KRAKEN_API_URL,
+} from '@/constants/urls';
 
 export const fetchBinanceTicker = async (ticker: string) => {
-  const url = `/binance/api/v3/ticker/24hr?symbol=${ticker}`;
+  const url = `${BINANCE_API_URL}/api/v3/ticker/24hr?symbol=${ticker}`;
   return api.get<TBinanceTickerResponse>(url);
 };
 
+export const fetchKrakenTicker = async (ticker: string) => {
+  const url = `${KRAKEN_API_URL}/0/public/Ticker?pair=${ticker}`;
+  return api.get<TKrakenTickerResponse>(url);
+};
+
 export const fetchHuobiTicker = async (ticker: string) => {
-  const url = `/huobi/market/detail/merged?symbol=${ticker}`;
+  const url = `${HUOBI_API_URL}/market/detail/merged?symbol=${ticker}`;
   return api.get<THuobiTickerResponse>(url);
 };
 
 export const fetchBitfinexTicker = async (ticker: string) => {
-  const url = `/bitfinex/v2/ticker/t${ticker}`;
+  const url = `${BITFINEX_API_URL}/v2/ticker/t${ticker}`;
   return api.get<TBitfinexTickerResponse>(url);
 };

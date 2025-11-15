@@ -6,6 +6,12 @@ import {
   THuobiCandlesResponse,
   TKrakenCandlesResponse,
 } from '@/types/candles';
+import {
+  BINANCE_API_URL,
+  BITFINEX_API_URL,
+  HUOBI_API_URL,
+  KRAKEN_API_URL,
+} from '@/constants/urls';
 
 const LIMIT = 100;
 const INTERVAL = 15;
@@ -15,7 +21,7 @@ export const fetchBinanceCandles = async ({
 }: {
   symbolId: string;
 }) => {
-  const url = `/binance/api/v3/uiKlines?symbol=${symbolId}&interval=${INTERVAL}m`;
+  const url = `${BINANCE_API_URL}/api/v3/uiKlines?symbol=${symbolId}&interval=${INTERVAL}m`;
   return api.get<TBinanceCandlesResponse>(url);
 };
 
@@ -24,7 +30,7 @@ export const fetchKrakenCandles = async ({
 }: {
   symbolId: string;
 }) => {
-  const url = `/kraken/0/public/OHLC?pair=${symbolId}&interval=${INTERVAL}`;
+  const url = `${KRAKEN_API_URL}/0/public/OHLC?pair=${symbolId}&interval=${INTERVAL}`;
   return api.get<TKrakenCandlesResponse>(url);
 };
 
@@ -34,11 +40,11 @@ export const fetchBitfinexCandles = async ({
   symbolId: string;
 }) => {
   const candle = `trade:${INTERVAL}m:t${symbolId}/hist`;
-  const url = `/bitfinex/v2/candles/${candle}`;
+  const url = `${BITFINEX_API_URL}/v2/candles/${candle}`;
   return api.get<TBitfinexCandlesResponse>(url);
 };
 
 export const fetchHuobiCandles = async ({ symbolId }: { symbolId: string }) => {
-  const url = `/huobi/market/history/kline?symbol=${symbolId}&period=${INTERVAL}min&size=${LIMIT}`;
+  const url = `${HUOBI_API_URL}/market/history/kline?symbol=${symbolId}&period=${INTERVAL}min&size=${LIMIT}`;
   return api.get<THuobiCandlesResponse>(url);
 };
