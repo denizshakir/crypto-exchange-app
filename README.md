@@ -1,5 +1,7 @@
 # Crypto Exchange App
 
+**[Live Demo](https://crypto-exchange-app-seven.vercel.app/)**
+
 Web app providing quick access to the current market data for cryptocurrency pairs.
 
 ## Features
