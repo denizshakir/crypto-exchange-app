@@ -1,6 +1,5 @@
 {
   "rewrites": [
-    { "source": "/(.*)", "destination": "/" },
     {
       "source": "/api/binance/:path*",
       "destination": "https://api.binance.com/:path*"
@@ -16,6 +15,7 @@
     {
       "source": "/api/bitfinex/:path*",
       "destination": "https://api.huobi.pro/:path*"
-    }
+    },
+    { "source": "/(.*)", "destination": "/" }
   ]
 }
