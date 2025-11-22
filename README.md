@@ -20,6 +20,8 @@ Web app providing quick access to the current market data for cryptocurrency pai
 - lightweight-charts by TradingView
 - TailwindCSS
 
+## Installation
+
 ```bash
 git clone https://github.com/denizshakir/crypto-exchange-app.git
 cd crypto-exchange-app
