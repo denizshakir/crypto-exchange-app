@@ -122,13 +122,11 @@ export type TUseOrdersParams = {
 
 export type TSubcribeOrdersBase = {
   pair: string;
-  removeAsk: (ask: IOrderItem) => void;
-  removeBid: (bid: IOrderItem) => void;
+  onSend: (data: string) => void;
   setAsks: (asks: IOrderItem[]) => void;
   setBids: (bids: IOrderItem[]) => void;
   syncAsks: (asks: IOrderItem[]) => void;
   syncBids: (bids: IOrderItem[]) => void;
   setHasError: (hasError: boolean) => void;
-  setIsDataLoaded: (isDataLoaded: boolean) => void;
   setIsLoading: (isTrueOrArray: boolean) => void;
 };

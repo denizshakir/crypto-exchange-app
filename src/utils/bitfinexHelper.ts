@@ -1,3 +1,5 @@
+import { throttle } from 'lodash';
+
 import { extractSymbolId } from './symbolHelper';
 
 import {
@@ -6,21 +8,22 @@ import {
   TBitfinexPayloadOrder,
   TSubcribeOrdersBase,
 } from '@/types/orders';
-
-type TUseBitfinexOrdersParams = TSubcribeOrdersBase;
+import { ORDERS_THROTTLE_MS } from '@/constants/orders';
 
 export const subscribeBitfinexOrders = ({
   pair,
-  removeAsk,
-  removeBid,
   syncAsks,
   syncBids,
   setHasError,
   setIsLoading,
-}: TUseBitfinexOrdersParams) => {
+  onSend,
+}: TSubcribeOrdersBase) => {
   const url = 'wss://api-pub.bitfinex.com/ws/2';
 
-  const onOpen = (ws: WebSocket) => {
+  const askMap = new Map<string, IOrderItem>();
+  const bidMap = new Map<string, IOrderItem>();
+
+  const onOpen = () => {
     const symbol = extractSymbolId(pair).toUpperCase();
     const data = JSON.stringify({
       event: 'subscribe',
@@ -31,12 +34,18 @@ export const subscribeBitfinexOrders = ({
       len: 25,
     });
 
-    ws.send(data);
+    onSend(data);
   };
+
+  const flush = throttle(() => {
+    syncAsks([...askMap.values()]);
+    syncBids([...bidMap.values()]);
+    askMap.clear();
+    bidMap.clear();
+  }, ORDERS_THROTTLE_MS);
 
   const onMessage = (e: MessageEvent<any>) => {
     const data: TBitfinexPayload = JSON.parse(e.data);
-
     if ('event' in data && data.event === 'error') {
       setHasError(true);
       setIsLoading(false);
@@ -48,17 +57,18 @@ export const subscribeBitfinexOrders = ({
     setIsLoading(false);
     const secondItem = data[1];
     if (Array.isArray(secondItem[0])) {
-      const newAsks: IOrderItem[] = [];
-      const newBids: IOrderItem[] = [];
-
       (secondItem as TBitfinexPayloadOrder[]).forEach((item) => {
         const price = item[0];
         const amount = item[2];
         const order: IOrderItem = { price, quantity: Math.abs(amount) };
-        amount > 0 ? newBids.push(order) : newAsks.push(order);
+        if (amount > 0) {
+          bidMap.set(price.toString(), order);
+        } else {
+          askMap.set(price.toString(), order);
+        }
       });
-      syncAsks(newAsks);
-      syncBids(newBids);
+
+      flush();
       return;
     }
 
@@ -66,11 +76,19 @@ export const subscribeBitfinexOrders = ({
 
     const order: IOrderItem = { price, quantity: Math.abs(amount) };
     if (count === 0) {
-      amount > 0 ? removeBid(order) : removeAsk(order);
+      if (amount > 0) {
+        bidMap.set(price.toString(), { ...order, quantity: 0 });
+      } else {
+        askMap.set(price.toString(), { ...order, quantity: 0 });
+      }
+      flush();
       return;
     }
 
-    amount > 0 ? syncBids([order]) : syncAsks([order]);
+    amount > 0
+      ? bidMap.set(price.toString(), order)
+      : askMap.set(price.toString(), order);
+    flush();
   };
 
   return {

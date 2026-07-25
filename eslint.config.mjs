@@ -9,6 +9,7 @@ import _import from 'eslint-plugin-import';
 import typescriptEslint from '@typescript-eslint/eslint-plugin';
 import jsxA11Y from 'eslint-plugin-jsx-a11y';
 import prettier from 'eslint-plugin-prettier';
+import eslintConfigPrettier from 'eslint-config-prettier';
 import globals from 'globals';
 import tsParser from '@typescript-eslint/parser';
 import js from '@eslint/js';
@@ -103,7 +104,6 @@ export default defineConfig([
       'no-unused-vars': 'off',
       'unused-imports/no-unused-vars': 'off',
       'unused-imports/no-unused-imports': 'warn',
-      quotes: ['error', 'single'],
 
       '@typescript-eslint/no-unused-vars': [
         'warn',
@@ -170,6 +170,13 @@ export default defineConfig([
           next: ['const', 'let', 'var'],
         },
       ],
+    },
+  },
+  eslintConfigPrettier,
+  {
+    files: ['**/*.ts', '**/*.tsx'],
+    rules: {
+      'no-multiple-empty-lines': ['warn', { max: 1, maxEOF: 0 }],
     },
   },
 ]);

@@ -49,7 +49,7 @@ const OrdersSection: FC<IOrdersSectionProps> = (props) => {
   return (
     <Card className="flex p-4 flex-col gap-3 min-w-sm" id="orders-section">
       <h3 className="text-lg font-semibold">Order book</h3>
-      <div className="flex flex-row xl:flex-col 2xl:flex-col gap-3">
+      <div className="flex flex-col md:flex-row xl:flex-col gap-3">
         {!hasError ? (
           <>
             <MarketDataPanel

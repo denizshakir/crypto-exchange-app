@@ -1,11 +1,12 @@
+import { throttle } from 'lodash';
+
 import { extractSymbolId } from '@/utils/symbolHelper';
 import {
   IOrderItem,
   TKrakenOrdersPayload,
   TSubcribeOrdersBase,
 } from '@/types/orders';
-
-type TUseKrakenOrdersParams = TSubcribeOrdersBase;
+import { ORDERS_SIZE, ORDERS_THROTTLE_MS } from '@/constants/orders';
 
 export const subscribeKrakenOrders = ({
   pair,
@@ -13,24 +14,34 @@ export const subscribeKrakenOrders = ({
   syncBids,
   setHasError,
   setIsLoading,
-}: TUseKrakenOrdersParams) => {
+  onSend,
+}: TSubcribeOrdersBase) => {
   const url = 'wss://ws.kraken.com/v2';
 
-  const onOpen = (ws: WebSocket) => {
+  const askMap = new Map<string, IOrderItem>();
+  const bidMap = new Map<string, IOrderItem>();
+
+  const flush = throttle(() => {
+    syncAsks([...askMap.values()]);
+    syncBids([...bidMap.values()]);
+    askMap.clear();
+    bidMap.clear();
+  }, ORDERS_THROTTLE_MS);
+
+  const onOpen = () => {
     const data = JSON.stringify({
       method: 'subscribe',
       params: {
         channel: 'book',
-        depth: 10,
+        depth: ORDERS_SIZE,
         symbol: [extractSymbolId(pair, '/')],
       },
     });
-    ws.send(data);
+    onSend(data);
   };
 
   const onMessage = (e: MessageEvent<any>) => {
     const payload: TKrakenOrdersPayload = JSON.parse(e.data);
-
     if ('error' in payload) {
       setHasError(true);
       setIsLoading(false);
@@ -40,17 +51,20 @@ export const subscribeKrakenOrders = ({
     if ('channel' in payload && payload.channel !== 'book') return;
 
     if ('data' in payload) {
-      const asks: IOrderItem[] = payload.data[0].asks.map(({ price, qty }) => ({
-        price,
-        quantity: qty,
-      }));
-      const bids: IOrderItem[] = payload.data[0].bids.map(({ price, qty }) => ({
-        price,
-        quantity: qty,
-      }));
+      payload.data[0].asks.forEach((ask) => {
+        askMap.set(ask.price.toString(), {
+          price: ask.price,
+          quantity: ask.qty,
+        });
+      });
+      payload.data[0].bids.forEach((bid) => {
+        bidMap.set(bid.price.toString(), {
+          price: bid.price,
+          quantity: bid.qty,
+        });
+      });
 
-      syncAsks(asks);
-      syncBids(bids);
+      flush();
       setIsLoading(false);
     }
   };

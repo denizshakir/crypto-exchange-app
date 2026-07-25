@@ -1,22 +1,21 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 
 import { EExchange } from '@/types/marketData';
 import {
-  removeAsk,
-  removeBid,
   syncAsks,
   syncBids,
-  setIsDataLoaded,
   setIsLoading,
   setAsks,
   setBids,
   setHasError,
 } from '@/slices/ordersSlice';
 import { subscribeBinanceOrders } from '@/utils/binanceHelper';
+import useWithDispatch from '@/hooks/useWithDispatch';
 import { subscribeKrakenOrders } from '@/utils/krakenHelper';
 import { subscribeBitfinexOrders } from '@/utils/bitfinexHelper';
 import { subscribeHuobiOrders } from '@/utils/huobiHelper';
-import useWithDispatch from '@/hooks/useWithDispatch';
+
+const CONNECTION_TIMEOUT_MS = 1000 * 10;
 
 type TUseOrdersParams = {
   exchange: EExchange;
@@ -28,26 +27,28 @@ const useOrders = ({ exchange, pair }: TUseOrdersParams) => {
   const onSetBids = useWithDispatch(setBids);
   const onAsksSync = useWithDispatch(syncAsks);
   const onBidsSync = useWithDispatch(syncBids);
-  const onRemoveAsk = useWithDispatch(removeAsk);
-  const onRemoveBid = useWithDispatch(removeBid);
-  const onSetIsDataLoaded = useWithDispatch(setIsDataLoaded);
   const onSetHasError = useWithDispatch(setHasError);
   const onSetIsLoading = useWithDispatch(setIsLoading);
 
   const socketRef = useRef<WebSocket>();
-  const subscribedRef = useRef<boolean>(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const onError = useCallback(() => {
     onSetHasError(true);
     onSetIsLoading(false);
   }, [onSetHasError, onSetIsLoading]);
 
+  const onSend = useCallback((data: string) => {
+    if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+      socketRef.current.send(data);
+    }
+  }, []);
+
   const clearTimeoutRef = useCallback(() => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
   }, []);
 
-  useEffect(() => {
+  const handler = useMemo(() => {
     const handlers = {
       [EExchange.BINANCE]: subscribeBinanceOrders,
       [EExchange.KRAKEN]: subscribeKrakenOrders,
@@ -55,7 +56,11 @@ const useOrders = ({ exchange, pair }: TUseOrdersParams) => {
       [EExchange.HUOBI]: subscribeHuobiOrders,
     };
 
-    const handler = handlers[exchange];
+    return handlers[exchange];
+  }, [exchange]);
+
+  useEffect(() => {
+    let isStale = false;
 
     const { url, onMessage, onOpen } = handler({
       pair,
@@ -63,61 +68,57 @@ const useOrders = ({ exchange, pair }: TUseOrdersParams) => {
       setBids: onSetBids,
       syncAsks: onAsksSync,
       syncBids: onBidsSync,
-      removeAsk: onRemoveAsk,
-      removeBid: onRemoveBid,
       setHasError: onSetHasError,
-      setIsDataLoaded: onSetIsDataLoaded,
       setIsLoading: onSetIsLoading,
+      onSend,
     });
 
     const socket = new WebSocket(url);
     socketRef.current = socket;
-    timeoutRef.current = setTimeout(() => {
-      onError();
-    }, 1000 * 10);
+    timeoutRef.current = setTimeout(onError, CONNECTION_TIMEOUT_MS);
     onSetIsLoading(true);
 
-    socket.addEventListener('open', () => {
+    const handleOpen = () => {
       console.log(`${exchange} orders socket opened`);
-      subscribedRef.current = true;
-      onOpen(socket);
-    });
+      onOpen();
+    };
 
-    socket.addEventListener('message', async (e) => {
+    const handleMessage = (e: MessageEvent<any>) => {
+      if (isStale) return;
       clearTimeoutRef();
-      onMessage(e, socket);
-    });
+      onMessage(e);
+    };
 
-    socket.addEventListener('close', () => {
+    const handleClose = () => {
       console.log(`${exchange} orders socket closed`);
-    });
+    };
 
-    socket.addEventListener('error', (error) => {
-      onError();
-      console.error(`${exchange} orders socket error: `, error);
-    });
+    socket.addEventListener('open', handleOpen);
+    socket.addEventListener('message', handleMessage);
+    socket.addEventListener('close', handleClose);
+    socket.addEventListener('error', onError);
 
     return () => {
-      setIsLoading(true);
+      isStale = true;
+      socket.removeEventListener('message', handleMessage);
+      onSetIsLoading(true);
       onSetAsks([]);
       onSetBids([]);
       onSetHasError(false);
-      subscribedRef.current = false;
       socketRef.current?.close();
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [
     clearTimeoutRef,
     exchange,
+    handler,
     onAsksSync,
     onSetAsks,
     onBidsSync,
     onError,
     onSetBids,
     onSetHasError,
-    onSetIsDataLoaded,
-    onRemoveAsk,
-    onRemoveBid,
+    onSend,
     onSetIsLoading,
     pair,
   ]);

@@ -1,4 +1,5 @@
 import { ungzip } from 'pako';
+import { throttle } from 'lodash';
 
 import { extractSymbolId } from './symbolHelper';
 
@@ -8,8 +9,7 @@ import {
   THuobiPayloadAskBid,
   TSubcribeOrdersBase,
 } from '@/types/orders';
-
-type TUseHuobiOrdersParams = TSubcribeOrdersBase;
+import { ORDERS_SIZE, ORDERS_THROTTLE_MS } from '@/constants/orders';
 
 export const subscribeHuobiOrders = ({
   pair,
@@ -17,26 +17,35 @@ export const subscribeHuobiOrders = ({
   setBids,
   setHasError,
   setIsLoading,
-}: TUseHuobiOrdersParams) => {
+  onSend,
+}: TSubcribeOrdersBase) => {
   const url = 'wss://api.huobi.pro/ws';
 
-  const onOpen = (ws: WebSocket) => {
+  let latestAsks: IOrderItem[] = [];
+  let latestBids: IOrderItem[] = [];
+
+  const flush = throttle(() => {
+    setAsks(latestAsks);
+    setBids(latestBids);
+  }, ORDERS_THROTTLE_MS);
+
+  const onOpen = () => {
     const symbol = extractSymbolId(pair).toLowerCase();
     const data = JSON.stringify({
-      sub: `market.${symbol}.mbp.refresh.10`,
+      sub: `market.${symbol}.mbp.refresh.${ORDERS_SIZE}`,
       id: 'id1',
     });
 
-    ws.send(data);
+    onSend(data);
   };
 
-  const onMessage = async (e: MessageEvent<any>, ws: WebSocket) => {
+  const onMessage = async (e: MessageEvent<any>) => {
     const arrayBuffer = await e.data.arrayBuffer();
-    const some = ungzip(new Uint8Array(await arrayBuffer), {
+    const bufferString = ungzip(new Uint8Array(await arrayBuffer), {
       to: 'string',
     });
 
-    const payload: THuobiPayload = JSON.parse(some);
+    const payload: THuobiPayload = JSON.parse(bufferString);
 
     if ('status' in payload && payload.status === 'error') {
       setHasError(true);
@@ -48,7 +57,7 @@ export const subscribeHuobiOrders = ({
       const data = JSON.stringify({
         pong: payload.ping,
       });
-      ws.send(data);
+      onSend(data);
       return;
     }
 
@@ -62,11 +71,9 @@ export const subscribeHuobiOrders = ({
       return newOrderItem;
     };
 
-    const newAsks = payload.tick.asks.slice(0, 10).map(ordersMap);
-    const newBids = payload.tick.bids.slice(0, 10).map(ordersMap);
-
-    setAsks(newAsks);
-    setBids(newBids);
+    latestAsks = payload.tick.asks.map(ordersMap);
+    latestBids = payload.tick.bids.map(ordersMap);
+    flush();
     setIsLoading(false);
   };
 

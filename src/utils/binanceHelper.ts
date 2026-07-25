@@ -5,14 +5,12 @@ import {
   TSubcribeOrdersBase,
 } from '@/types/orders';
 
-type TUseBinanceOrdersParams = TSubcribeOrdersBase;
-
 export const subscribeBinanceOrders = ({
   pair,
   setAsks,
   setBids,
   setIsLoading,
-}: TUseBinanceOrdersParams) => {
+}: TSubcribeOrdersBase) => {
   const onOpen = () => {};
   const extractedPair = extractSymbolId(pair);
   const url = `wss://stream.binance.com:9443/ws/${extractedPair.toLowerCase()}@depth10`;
